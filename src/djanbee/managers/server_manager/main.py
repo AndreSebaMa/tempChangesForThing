@@ -3,9 +3,11 @@ from typing import Optional, List, Tuple
 from collections import namedtuple
 
 from ..os_manager import OSManager
+from ..file_system_manager import FileSystemManager
 from ..console_manager import ConsoleManager
 from ..django_manager import DjangoManager
 from .server_implementations import NginxServerManager
+from ..os_manager.command import CommandResult
 
 Result = namedtuple("Result", ["valid", "object"])
 
@@ -14,17 +16,19 @@ class ServerManager:
     def __init__(
         self,
         os_manager: OSManager,
+        fs_manager: FileSystemManager,
         console_manager: ConsoleManager,
         django_manager: DjangoManager,
         server_type: str = "nginx",
     ):
         """Initializes server-specific manager"""
         self.os_manager = os_manager
+        self.fs_manager = fs_manager
         self.console_manager = console_manager
         self.django_manager = django_manager
         if server_type.lower() == "nginx":
             self._manager = NginxServerManager(
-                self.os_manager, self.console_manager, self.django_manager
+                self.os_manager, self.fs_manager, self.console_manager, self.django_manager
             )
         else:
             raise ValueError(f"Unsupported server type: {server_type}")
@@ -37,19 +41,19 @@ class ServerManager:
         """Installs the server if not already installed"""
         return self._manager.install_server()
 
-    def start_server(self) -> Tuple[bool, str]:
+    def start_server(self) -> CommandResult:
         """Starts the server"""
         return self._manager.start_server()
 
-    def stop_server(self) -> Tuple[bool, str]:
+    def stop_server(self) -> CommandResult:
         """Stops the server"""
         return self._manager.stop_server()
 
-    def restart_server(self) -> Tuple[bool, str]:
+    def restart_server(self) -> CommandResult:
         """Restarts the server"""
         return self._manager.restart_server()
 
-    def enable_server(self) -> Tuple[bool, str]:
+    def enable_server(self) -> CommandResult:
         """Enables the server to start on boot"""
         return self._manager.enable_server()
 
@@ -124,10 +128,10 @@ class ServerManager:
         """Check if default site exists in sites-enabled."""
         return self._manager.check_default_site_exists()
 
-    def remove_default_site(self) -> Tuple[bool, str]:
+    def remove_default_site(self) -> CommandResult:
         """Remove the default site from sites-enabled."""
         return self._manager.remove_default_site()
 
-    def test_configuration(self) -> Tuple[bool, str]:
+    def test_configuration(self) -> CommandResult:
         """Test the Nginx configuration."""
         return self._manager.test_configuration()
