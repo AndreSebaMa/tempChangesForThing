@@ -30,6 +30,9 @@ class BaseOSManager(ABC):
     def get_current_directory(self) -> Path:
         """Return current working directory."""
 
+    def get_dir(self) -> Path:
+        """Return current working directory."""
+
     @abstractmethod
     def change_directory(self, path: Path) -> None:
         """Chdir into given path (or raise)."""
