@@ -80,7 +80,7 @@ class EnvManager:
             Tuple[bool, str]: Success flag and message
         """
         venv_path = Path(venv_path)
-        pip_path = self.os_manager._manager.get_pip_path(venv_path)
+        pip_path = self.os_manager.get_pip_path(venv_path)
 
         try:
             result = subprocess.run(
@@ -421,7 +421,7 @@ class EnvManager:
         Returns:
             Path: Path to pip executable
         """
-        return self.os_manager._manager.get_pip_path(Path(venv_path))
+        return self.os_manager.get_pip_path(Path(venv_path))
 
     def install_requirements(
         self, venv_path: Union[str, Path], requirements_path: Union[str, Path]

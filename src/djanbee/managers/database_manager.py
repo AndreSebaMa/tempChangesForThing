@@ -232,7 +232,7 @@ class DatabaseManager:
         Returns:
             Tuple[bool, str]: (is_installed, message)
         """
-        is_client_installed = self.os_manager._manager.check_package_installed("psql")
+        is_client_installed = self.env_manager.check_package_installed("psql")
 
         if not is_client_installed:
             return False, "PostgreSQL client (psql) not found"
@@ -240,7 +240,7 @@ class DatabaseManager:
         return True, "PostgreSQL installed"
 
     def check_postgres_status(self) -> bool:
-        is_active = self.os_manager._manager.check_service_status("postgresql")
+        is_active = self.os_manager.check_service_status("postgresql")
         return is_active
 
     def get_all_databases(self) -> Tuple[bool, list | str]:
