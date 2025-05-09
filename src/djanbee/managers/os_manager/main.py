@@ -29,6 +29,10 @@ class OSManager:
     def get_current_directory(self) -> Path:
         return self._impl.get_current_directory()
 
+    def check_package_installed(self, package_name: str) -> bool:
+        """Checks if a system package is installed"""
+        return self._impl.check_package_installed(package_name)
+
     get_dir = get_current_directory
 
     def change_directory(self, path: Path) -> None:

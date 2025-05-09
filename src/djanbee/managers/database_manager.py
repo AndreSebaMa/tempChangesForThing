@@ -232,7 +232,7 @@ class DatabaseManager:
         Returns:
             Tuple[bool, str]: (is_installed, message)
         """
-        is_client_installed = self.env_manager.check_package_installed("psql")
+        is_client_installed = self.os_manager.check_package_installed("psql")
 
         if not is_client_installed:
             return False, "PostgreSQL client (psql) not found"
