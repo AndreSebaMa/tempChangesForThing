@@ -178,9 +178,9 @@ class DatabaseManager:
         ]
 
         for package in package_names:
-            success, message = self.os_manager.install_package(package)
-            if not success:
-                return False, f"Failed to install {package}: {message}"
+            result = self.os_manager.install_package(package)
+            if not result.success:
+                return False, f"Failed to install {package}: {result.stderr}"
 
         return True, "PostgreSQL packages installed successfully"
 
@@ -285,9 +285,9 @@ class DatabaseManager:
 
         if dependency == "psycopg2-binary":
             # First ensure libpq-dev is installed (needed for psycopg2)
-            success, message = self.os_manager.install_package("libpq-dev")
-            if not success and self.console_manager:
-                self.console_manager.print_step_failure("Dependencies", message)
+            result = self.os_manager.install_package("libpq-dev")
+            if not result.success and self.console_manager:
+                self.console_manager.print_step_failure("Dependencies", result.stderr)
 
             # Install with pip
             return self.os_manager.install_pip_package("psycopg2-binary")
@@ -314,9 +314,9 @@ class DatabaseManager:
             bool: True if all dependencies are available (or were successfully installed), False otherwise
         """
         # First ensure system dependencies (libpq-dev is needed for psycopg2)
-        success, message = self.os_manager.install_package("libpq-dev")
-        if not success and self.console_manager:
-            self.console_manager.print_step_failure("System Dependency", message)
+        result = self.os_manager.install_package("libpq-dev")
+        if not result.success and self.console_manager:
+            self.console_manager.print_step_failure("System Dependency", result.stderr)
 
         # Use the env_manager to handle Python package dependencies if available
         if self.env_manager:

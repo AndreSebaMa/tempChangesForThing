@@ -3,19 +3,23 @@ from typing import List, Tuple, Optional
 import textwrap
 from ..base import BaseServerManager
 from ...os_manager import OSManager
+from ...file_system_manager import FileSystemManager
 from ...console_manager import ConsoleManager
 from ...django_manager import DjangoManager
+from ...os_manager.command import CommandResult
 
 
 class NginxServerManager(BaseServerManager):
     def __init__(
         self,
         os_manager: OSManager,
+        fs_manager: FileSystemManager,
         console_manager: ConsoleManager,
         django_manager: DjangoManager,
     ):
         """Initialize with OS manager for platform-specific operations"""
         self.os_manager = os_manager
+        self.fs_manager = fs_manager
         self.console_manager = console_manager
         self.django_manager = django_manager
         self.server_name = "nginx"
@@ -25,26 +29,26 @@ class NginxServerManager(BaseServerManager):
         """Checks if Nginx is installed"""
         return self.os_manager.check_package_installed(self.server_name)
 
-    def install_server(self) -> Tuple[bool, str]:
+    def install_server(self) -> tuple[bool, str] | CommandResult:
         """Installs Nginx if not already installed"""
         if self.check_server_installed():
             return True, "Nginx is already installed"
 
         return self.os_manager.install_package(self.server_name)
 
-    def start_server(self) -> Tuple[bool, str]:
+    def start_server(self) -> CommandResult:
         """Starts the Nginx server"""
         return self.os_manager.start_service(self.server_name)
 
-    def stop_server(self) -> Tuple[bool, str]:
+    def stop_server(self) -> CommandResult:
         """Stops the Nginx server"""
         return self.os_manager.stop_service(self.server_name)
 
-    def restart_server(self) -> Tuple[bool, str]:
+    def restart_server(self) -> CommandResult:
         """Restarts the Nginx server"""
         return self.os_manager.restart_service(self.server_name)
 
-    def enable_server(self) -> Tuple[bool, str]:
+    def enable_server(self) -> CommandResult:
         """Enables Nginx to start on boot"""
         return self.os_manager.enable_service(self.server_name)
 
@@ -69,7 +73,7 @@ class NginxServerManager(BaseServerManager):
         """Checks if Gunicorn is installed via pip"""
         return self.os_manager.check_pip_package_installed("gunicorn")
 
-    def install_gunicorn(self) -> Tuple[bool, str]:
+    def install_gunicorn(self) -> tuple[bool, str] | CommandResult:
         """Installs Gunicorn if not already installed"""
         if self.check_gunicorn_installed():
             return True, "Gunicorn is already installed"
@@ -248,7 +252,7 @@ class NginxServerManager(BaseServerManager):
             # Write the config file
             config_file_path = Path(f"/etc/nginx/sites-available/{project_name}")
             success, message = self.os_manager.write_text_file(
-                config_file_path, config_content, use_sudo=use_sudo
+                config_file_path, config_content
             )
             if not success:
                 return False, f"Failed to create Nginx configuration: {message}"
@@ -354,12 +358,12 @@ class NginxServerManager(BaseServerManager):
         default_config_path = Path("/etc/nginx/sites-enabled/default")
         return self.os_manager.check_file_exists(default_config_path)
 
-    def remove_default_site(self) -> Tuple[bool, str]:
+    def remove_default_site(self) -> CommandResult:
         """Remove the default site from sites-enabled."""
         default_config_path = Path("/etc/nginx/sites-enabled/default")
         return self.os_manager.run_command(["sudo", "rm", str(default_config_path)])
 
-    def test_configuration(self) -> Tuple[bool, str]:
+    def test_configuration(self) -> CommandResult:
         """Test the Nginx configuration."""
         return self.os_manager.run_command(["sudo", "nginx", "-t"])
 

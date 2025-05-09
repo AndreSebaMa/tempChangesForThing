@@ -37,6 +37,7 @@ class BaseOSManager(ABC):
     def change_directory(self, path: Path) -> None:
         """Chdir into given path (or raise)."""
 
+
     @abstractmethod
     def get_pip_path(self, venv_path: Path) -> Path:
         """Return the pip executable inside a virtualenv."""
@@ -46,7 +47,15 @@ class BaseOSManager(ABC):
         """Check if a system package/binary is available in PATH."""
 
     @abstractmethod
+    def check_pip_package_installed(self, name: str) -> bool:
+        """Check if a system package/binary is available in PATH."""
+
+    @abstractmethod
     def install_package(self, name: str) -> CommandResult:
+        """Install a system package (e.g. apt, winget, etc.)."""
+
+    @abstractmethod
+    def install_pip_package(self, name: str) -> CommandResult:
         """Install a system package (e.g. apt, winget, etc.)."""
 
     @abstractmethod
