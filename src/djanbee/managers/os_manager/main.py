@@ -29,6 +29,8 @@ class OSManager:
     def get_current_directory(self) -> Path:
         return self._impl.get_current_directory()
 
+    get_dir = get_current_directory
+
     def change_directory(self, path: Path) -> None:
         self._impl.change_directory(path)
 
