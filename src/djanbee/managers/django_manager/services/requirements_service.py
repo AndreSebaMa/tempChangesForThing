@@ -1,24 +1,31 @@
+# djanbee/services/requirements_service.py
+
 from pathlib import Path
-from ....managers.os_manager import OSManager
-from ..state import DjangoManagerState
+from typing import Optional, Tuple
 from collections import namedtuple
-from typing import Tuple
+
+from ....managers.os_manager import OSManager
+from ....managers.file_system_manager import FileSystemManager
+from ..state import DjangoManagerState
 from .requirements_service_display import DjangoRequirementsServiceDisplay
 
 Result = namedtuple("Result", ["valid", "object"])
 
 
 class DjangoRequirementsService:
-    """Service for managing virtual environment"""
+    """Service for managing virtual environment requirements"""
 
     def __init__(
-        self, os_manager: OSManager, display: DjangoRequirementsServiceDisplay
+        self,
+        os_manager: OSManager,
+        display: DjangoRequirementsServiceDisplay,
+        fs_manager: FileSystemManager,
     ):
         self.os_manager = os_manager
+        self.fs_manager = fs_manager
         self.state = DjangoManagerState.get_instance()
         self.display = display
 
-    # High-level public methods first
     def find_or_extract_requirements(self, venv_path=None):
         """Find existing requirements or extract from virtual environment"""
         self.display.lookup_requirements()
@@ -27,7 +34,6 @@ class DjangoRequirementsService:
         if not requirements:
             self.display.failure_lookup_requirements()
             if self.display.prompt_extract_requirements():
-                # Use the provided venv_path or fall back to the one in state
                 active_venv = venv_path or self.state.active_venv_path
                 if not active_venv:
                     return None, "No active virtual environment found"
@@ -37,6 +43,7 @@ class DjangoRequirementsService:
                 return None
 
         if requirements:
+            # requirements.object is a Path to the requirements.txt
             self.display.success_lookup_requirements(requirements.object)
 
         return requirements
@@ -46,14 +53,13 @@ class DjangoRequirementsService:
         if self.display.prompt_install_requirements():
             self.display.progress_install_requirements()
 
-            # Use the provided venv_path or fall back to the one in state
             active_venv = venv_path or self.state.active_venv_path
             if not active_venv:
                 return False, "No active virtual environment found"
 
             result = self.install_requirements(active_venv, requirements.object)
 
-            if result[0]:  # If installation was successful
+            if result[0]:
                 self.display.success_install_requirements(
                     requirements.object, active_venv
                 )
@@ -63,53 +69,54 @@ class DjangoRequirementsService:
         else:
             return False, "Installation cancelled by user"
 
-    # Mid-level methods grouped by functionality
-    def find_requirements(self):
-        requirements = self.os_manager.search_folder(self.has_requirements)
-        if not requirements:
-            requirements = self.os_manager.search_subfolders(self.has_requirements)
+    def find_requirements(self) -> Optional[Result]:
+        """
+        Look for a requirements file in cwd, then in subfolders.
+        Returns Result(valid=True, object=path_to_folder) or None.
+        """
+        cwd = Path(".")
+        # 1) check in cwd
+        folder = self.fs_manager.search_folder(cwd, self.has_requirements)
+        # 2) if not found, check one level deep
+        if not folder:
+            folders = self.fs_manager.search_subfolders(cwd, self.has_requirements)
+            folder = folders[0] if folders else None
 
-        if requirements:
-            self.state.current_requirements_path = (
-                requirements.object / "requirements.txt"
-            )
-            return Result(True, requirements.object / "requirements.txt")
+        if folder:
+            req_path = folder / "requirements.txt"
+            self.state.current_requirements_path = req_path
+            return Result(True, req_path)
+
         return None
 
     def extract_requirements(self, venv_path: str | Path) -> Tuple[bool, str]:
         """Extracts pip requirements from a virtual environment"""
         venv_path = Path(venv_path)
+        requirements_file = "requirements.txt"
+        output_path = self.os_manager.get_current_directory() / requirements_file
 
-        requirements_filename = "requirements.txt"
-        requirements_path = self.os_manager.get_dir() / requirements_filename
-
-        # Run pip freeze using OS manager
         success, output = self.os_manager.run_pip_command(venv_path, ["freeze"])
         if not success:
             return False, output
 
-        # Write requirements file using OS manager
         write_success, message = self.os_manager.write_text_file(
-            requirements_path, output
+            output_path, output
         )
         if not write_success:
             return False, message
 
-        return Result(True, requirements_path)
+        return Result(True, output_path)
 
     def install_requirements(
         self, venv_path: str | Path, requirements_path: str | Path
     ) -> Tuple[bool, str]:
         """Installs pip requirements into a virtual environment"""
-
         venv_path = Path(venv_path)
-
         requirements_path = Path(requirements_path)
 
-        # Check if requirements file exists
-        if not self.os_manager.check_file_exists(requirements_path):
+        if not requirements_path.exists():
             return False, f"Requirements file not found: {requirements_path}"
-        # Run pip install with requirements file
+
         success, output = self.os_manager.run_pip_command(
             venv_path, ["install", "-r", str(requirements_path)]
         )
@@ -119,25 +126,13 @@ class DjangoRequirementsService:
         else:
             return False, output
 
-    # Utility/helper methods last
-    def has_requirements(self, path="."):
+    def has_requirements(self, path: Path) -> bool:
         """
-        Check if directory has requirements file by verifying:
-        1. requirements.txt exists
-        Or alternative requirement files like:
-        2. requirements-dev.txt
-        3. requirements-prod.txt
+        Validator for folder paths: returns True if folder contains
+        a requirements.txt (or -dev/prod variants).
         """
-        # Common requirements file patterns
-        requirement_files = [
-            "requirements.txt",
-            "requirements-dev.txt",
-            "requirements-prod.txt",
-        ]
-
-        # Check for any of the requirements files
-        for req_file in requirement_files:
-            if (path / req_file).exists():
+        patterns = ["requirements.txt", "requirements-dev.txt", "requirements-prod.txt"]
+        for name in patterns:
+            if (path / name).exists():
                 return True
-
         return False
