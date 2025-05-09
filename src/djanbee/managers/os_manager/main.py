@@ -29,6 +29,10 @@ class OSManager:
     def get_current_directory(self) -> Path:
         return self._impl.get_current_directory()
 
+    def install_package(self, package_name: str) -> CommandResult:
+        """Installs a system package using appropriate package manager"""
+        return self._impl.install_package(package_name)
+
     def check_package_installed(self, package_name: str) -> bool:
         """Checks if a system package is installed"""
         return self._impl.check_package_installed(package_name)
