@@ -1,4 +1,6 @@
 from ..os_manager import OSManager
+from ..file_system_manager import FileSystemManager
+
 from ..console_manager import ConsoleManager
 from ..dotenv_manager import DotenvManager
 from .services.venv_service import DjangoEnvironmentService
@@ -36,12 +38,13 @@ from .state import DjangoManagerState
 class DjangoManager:
     """Container for Django-related services with lazy loading"""
 
-    def __init__(self, os_manager: OSManager, console_manager: ConsoleManager, env_manager=None, dotenv_manager=None):
+    def __init__(self, os_manager: OSManager, console_manager: ConsoleManager, env_manager=None, dotenv_manager=None, fs_manager: FileSystemManager = None):
         """Initialize the Django manager with dependencies but not services"""
         self.os_manager = os_manager
         self.console_manager = console_manager
         self.env_manager = env_manager
         self.dotenv_manager = dotenv_manager
+        self.fs_manager = fs_manager or FileSystemManager()
 
         # Initialize service placeholders
         self._project_service = None
@@ -75,7 +78,7 @@ class DjangoManager:
         """Lazy load the project service when first accessed"""
         if self._project_service is None:
             self._project_service = DjangoProjectService(
-                self.os_manager, DjangoProjectServiceDisplay(self.console_manager)
+                self.os_manager, DjangoProjectServiceDisplay(self.console_manager), self.fs_manager
             )
         return self._project_service
 
