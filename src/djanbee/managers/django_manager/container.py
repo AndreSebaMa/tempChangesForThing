@@ -87,7 +87,7 @@ class DjangoManager:
         """Lazy load the project service when first accessed"""
         if self._environment_service is None:
             self._environment_service = DjangoEnvironmentService(
-                self.os_manager, DjangoEnvironmentServiceDisplay(self.console_manager)
+                self.os_manager, DjangoEnvironmentServiceDisplay(self.console_manager), self.fs_manager
             )
         return self._environment_service
 
@@ -97,7 +97,7 @@ class DjangoManager:
         if self._requirements_service is None:
             self._requirements_service = DjangoRequirementsService(
                 self.os_manager,
-                DjangoRequirementsServiceDisplay(self.console_manager),
+                DjangoRequirementsServiceDisplay(self.console_manager), self.fs_manager
             )
         return self._requirements_service
 
