@@ -1,0 +1,15 @@
+# Python packaging
+*.egg-info/
+*.egg
+dist/
+build/
+__pycache__/
+*/__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE files
+.idea/
+.vscode/
+.venv/
